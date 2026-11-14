@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SALES
+  ADMIN
+}
+
+enum Segment {
+  B2G
+  B2B
+}
+
+enum VisitStatus {
+  NOT_VISITED
+  VISITED
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  name         String     @db.VarChar(100)
+  email        String     @unique @db.VarChar(100)
+  passwordHash String     @db.VarChar(255)
+  role         Role       @default(SALES)
+  createdAt    DateTime   @default(now())
+  activities   Activity[]
+
+  @@map("users")
+}
+
+model Entity {
+  id         String     @id @db.VarChar(36)
+  name       String     @db.VarChar(150)
+  type       String     @db.VarChar(50)
+  segment    Segment
+  region     String     @db.VarChar(100)
+  createdAt  DateTime   @default(now())
+  activities Activity[]
+
+  @@unique([name, type])
+  @@map("entities")
+}
+
+model Activity {
+  id           String      @id @default(uuid()) @db.VarChar(36)
+  entityId     String?     @db.VarChar(36)
+  entity       Entity?     @relation(fields: [entityId], references: [id], onDelete: SetNull)
+  entityName   String      @db.VarChar(150)
+  entityType   String      @db.VarChar(50)
+  entityRegion String      @db.VarChar(100)
+  segment      Segment
+  visitDate    DateTime    @db.Date
+  status       VisitStatus @default(NOT_VISITED)
+  salesName    String      @db.VarChar(100)
+  createdById  Int
+  createdBy    User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([segment, status, visitDate])
+  @@map("activities")
+}
